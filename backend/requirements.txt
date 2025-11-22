@@ -1,0 +1,32 @@
+# Core Web Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Pydantic for data validation (will use latest compatible)
+pydantic
+pydantic-settings
+
+# LLM Integration
+ollama
+
+# Embeddings (flexible versions to find prebuilt wheels)
+sentence-transformers
+torch
+numpy
+
+# Vector Database
+chromadb
+
+# Document Processing
+pypdf
+python-docx
+
+# Utilities
+python-dotenv
+aiofiles
+
+# Testing
+pytest
+pytest-asyncio
+httpx
