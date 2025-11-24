@@ -15,24 +15,62 @@ from app.config import settings
 from app.document_processor import DocumentProcessor
 from app.embeddings import get_embedding_model
 from app.vector_store import VectorStore
+from app.llm_client import LLMClient
+from app.metadata_extractor import MetadataExtractor
+from app.ai_metadata_generator import AIMetadataGenerator
+from app.metadata_store import MetadataStore
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
-# Initialize components
+# Initialize lightweight components
 document_processor = DocumentProcessor(
     chunk_size=settings.CHUNK_SIZE,
     chunk_overlap=settings.CHUNK_OVERLAP
 )
-embedding_model = get_embedding_model(
-    model_name=settings.EMBEDDING_MODEL,
-    device=settings.EMBEDDING_DEVICE
-)
-vector_store = VectorStore(
-    persist_directory=settings.CHROMA_DIR,
-    collection_name=settings.CHROMA_COLLECTION_NAME
-)
+metadata_extractor = MetadataExtractor()
+
+# Lazy-loaded components (initialized on first use)
+_embedding_model = None
+_vector_store = None
+_llm_client = None
+_ai_metadata_generator = None
+_metadata_store = None
+
+
+def get_components():
+    """Lazy initialization of heavy components."""
+    global _embedding_model, _vector_store, _llm_client, _ai_metadata_generator, _metadata_store
+    
+    if _embedding_model is None:
+        _embedding_model = get_embedding_model(
+            model_name=settings.EMBEDDING_MODEL,
+            device=settings.EMBEDDING_DEVICE
+        )
+    
+    if _vector_store is None:
+        _vector_store = VectorStore(
+            persist_directory=settings.CHROMA_DIR,
+            collection_name=settings.CHROMA_COLLECTION_NAME
+        )
+    
+    if _llm_client is None:
+        _llm_client = LLMClient(
+            base_url=settings.OLLAMA_BASE_URL,
+            model=settings.OLLAMA_MODEL,
+            timeout=settings.OLLAMA_TIMEOUT
+        )
+    
+    if _ai_metadata_generator is None:
+        _ai_metadata_generator = AIMetadataGenerator(llm_client=_llm_client)
+    
+    if _metadata_store is None:
+        _metadata_store = MetadataStore(
+            persist_directory=settings.CHROMA_DIR
+        )
+    
+    return _embedding_model, _vector_store, _ai_metadata_generator, _metadata_store
 
 
 @router.post("/document", response_model=UploadResponse, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})
@@ -55,6 +93,9 @@ async def upload_document(file: UploadFile = File(...)):
         UploadResponse with processing details
     """
     start_time = time.time()
+    
+    # Get components (lazy initialization)
+    embedding_model, vector_store, ai_metadata_generator, metadata_store = get_components()
     
     try:
         # Validate file type
@@ -139,7 +180,7 @@ async def upload_document(file: UploadFile = File(...)):
                 detail=f"Failed to generate embeddings: {str(e)}"
             )
         
-        # Store in vector database
+        # Store chunks in vector database
         try:
             chunks_upserted = vector_store.upsert_chunks(
                 chunks=chunk_texts,
@@ -158,6 +199,45 @@ async def upload_document(file: UploadFile = File(...)):
                 status_code=500,
                 detail=f"Failed to store in vector database: {str(e)}"
             )
+        
+        # Extract and store document metadata
+        try:
+            # Extract file system and document-specific metadata
+            extracted_metadata = metadata_extractor.extract_all_metadata(file_path)
+            logger.info(f"Extracted metadata: {extracted_metadata.get('title', file.filename)}")
+            
+            # Generate AI metadata (summary, keywords, document type)
+            full_text = " ".join(chunk_texts)
+            ai_metadata = ai_metadata_generator.generate_all_metadata(full_text, file.filename)
+            logger.info(f"Generated AI metadata: type={ai_metadata['document_type']}, keywords={len(ai_metadata.get('keywords', []))}")
+            
+            # Merge all metadata
+            combined_metadata = {**extracted_metadata, **ai_metadata}
+            
+            # Get the summary for embedding
+            summary_text = ai_metadata.get("summary", "")
+            
+            # Generate embedding for the summary
+            summary_embedding = None
+            if summary_text:
+                try:
+                    summary_embedding = embedding_model.embed_text(summary_text)
+                except Exception as e:
+                    logger.warning(f"Failed to generate summary embedding: {str(e)}")
+            
+            # Store in metadata store
+            metadata_store.store_document_metadata(
+                document_id=document_id,
+                metadata=combined_metadata,
+                summary_embedding=summary_embedding,
+                summary_text=summary_text
+            )
+            
+            logger.info(f"Stored metadata for document: {document_id}")
+        
+        except Exception as e:
+            # Log error but don't fail the upload - content is already stored
+            logger.error(f"Failed to extract/store metadata (non-critical): {str(e)}")
         
         processing_time = time.time() - start_time
         
@@ -205,11 +285,23 @@ async def delete_document(document_id: str):
     Returns:
         Success message with deletion details
     """
+    # Get components (lazy initialization)
+    _, vector_store, _, metadata_store = get_components()
+    
     try:
         logger.info(f"Deleting document: {document_id}")
         
         # Delete from vector store
         deleted_count = vector_store.delete_by_document_id(document_id)
+        
+        # Delete from metadata store
+        metadata_deleted = False
+        try:
+            metadata_store.delete_document(document_id)
+            metadata_deleted = True
+            logger.info(f"Deleted metadata for document: {document_id}")
+        except Exception as e:
+            logger.warning(f"Failed to delete metadata (non-critical): {str(e)}")
         
         # Find and delete document file
         document_files = list(settings.DOCUMENTS_DIR.glob(f"{document_id}_*"))
@@ -223,7 +315,7 @@ async def delete_document(document_id: str):
             except Exception as e:
                 logger.warning(f"Failed to delete file {doc_file}: {str(e)}")
         
-        if deleted_count == 0 and files_deleted == 0:
+        if deleted_count == 0 and files_deleted == 0 and not metadata_deleted:
             raise HTTPException(
                 status_code=404,
                 detail=f"Document not found: {document_id}"

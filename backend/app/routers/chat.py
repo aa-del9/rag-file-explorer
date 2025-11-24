@@ -13,31 +13,58 @@ from app.embeddings import get_embedding_model
 from app.vector_store import VectorStore
 from app.llm_client import LLMClient
 from app.rag_pipeline import RAGPipeline
+from app.metadata_store import MetadataStore
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# Initialize components
-embedding_model = get_embedding_model(
-    model_name=settings.EMBEDDING_MODEL,
-    device=settings.EMBEDDING_DEVICE
-)
-vector_store = VectorStore(
-    persist_directory=settings.CHROMA_DIR,
-    collection_name=settings.CHROMA_COLLECTION_NAME
-)
-llm_client = LLMClient(
-    base_url=settings.OLLAMA_BASE_URL,
-    model=settings.OLLAMA_MODEL,
-    timeout=settings.OLLAMA_TIMEOUT
-)
-rag_pipeline = RAGPipeline(
-    embedding_model=embedding_model,
-    vector_store=vector_store,
-    llm_client=llm_client,
-    top_k=settings.TOP_K_RESULTS
-)
+# Lazy-loaded components (initialized on first use)
+_embedding_model = None
+_vector_store = None
+_llm_client = None
+_metadata_store = None
+_rag_pipeline = None
+
+
+def get_components():
+    """Lazy initialization of heavy components."""
+    global _embedding_model, _vector_store, _llm_client, _metadata_store, _rag_pipeline
+    
+    if _embedding_model is None:
+        _embedding_model = get_embedding_model(
+            model_name=settings.EMBEDDING_MODEL,
+            device=settings.EMBEDDING_DEVICE
+        )
+    
+    if _vector_store is None:
+        _vector_store = VectorStore(
+            persist_directory=settings.CHROMA_DIR,
+            collection_name=settings.CHROMA_COLLECTION_NAME
+        )
+    
+    if _llm_client is None:
+        _llm_client = LLMClient(
+            base_url=settings.OLLAMA_BASE_URL,
+            model=settings.OLLAMA_MODEL,
+            timeout=settings.OLLAMA_TIMEOUT
+        )
+    
+    if _metadata_store is None:
+        _metadata_store = MetadataStore(
+            persist_directory=settings.CHROMA_DIR
+        )
+    
+    if _rag_pipeline is None:
+        _rag_pipeline = RAGPipeline(
+            embedding_model=_embedding_model,
+            vector_store=_vector_store,
+            llm_client=_llm_client,
+            metadata_store=_metadata_store,
+            top_k=settings.TOP_K_RESULTS
+        )
+    
+    return _vector_store, _rag_pipeline
 
 
 @router.post("/query", response_model=ChatResponse, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})
@@ -58,6 +85,9 @@ async def query(request: ChatRequest):
     Returns:
         ChatResponse with answer and retrieved context
     """
+    # Get components (lazy initialization)
+    vector_store, rag_pipeline = get_components()
+    
     try:
         logger.info(f"Processing query: '{request.question[:50]}...'")
         
@@ -122,6 +152,10 @@ async def get_stats():
     Returns:
         Dictionary with system statistics
     """
+    # Get components (lazy initialization)
+    vector_store, _ = get_components()
+    embedding_model = _embedding_model  # Already initialized
+    
     try:
         collection_stats = vector_store.get_collection_stats()
         

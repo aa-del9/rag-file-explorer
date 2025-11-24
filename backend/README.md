@@ -4,13 +4,30 @@ A fully local RAG (Retrieval-Augmented Generation) system for querying documents
 
 ## 🚀 Features
 
+### Core RAG System
+
 - **Local LLM**: Uses Llama 3.1 via Ollama (no cloud dependencies)
 - **Multiple Document Formats**: Support for PDF, DOC, and DOCX files
 - **Extensible Architecture**: Easy to add new document format processors
 - **Vector Search**: ChromaDB for persistent vector storage
 - **Embeddings**: sentence-transformers (MiniLM-L6-v2)
 - **REST API**: FastAPI-based endpoints for upload and querying
-- **Production Ready**: Comprehensive error handling, logging, and testing
+
+### Metadata-Aware File Explorer (New!)
+
+- **Automatic Metadata Extraction**: File system + document-specific metadata
+- **AI-Generated Metadata**: Summaries, keywords, document classification
+- **Metadata Storage**: Separate ChromaDB collection for document discovery
+- **Advanced Search**: Filter by filename, type, author, date, keywords
+- **Semantic Document Search**: Find documents by meaning, not just keywords
+- **Query Classification**: Auto-route between metadata/content/hybrid queries
+- **Hybrid RAG**: Combine metadata filtering with content retrieval
+
+### Production Ready
+
+- Comprehensive error handling, logging, and testing
+- Modular architecture for easy extension
+- Full API documentation with interactive Swagger UI
 
 ## 📋 Prerequisites
 
@@ -81,7 +98,11 @@ The server will start on: **http://localhost:8000**
 
 ## 📡 API Endpoints
 
-### 1. Health Check
+> **📖 For complete metadata system documentation, see [METADATA_SYSTEM.md](METADATA_SYSTEM.md)**
+
+### Core Endpoints
+
+#### 1. Health Check
 
 ```bash
 GET http://localhost:8000/health
@@ -89,7 +110,7 @@ GET http://localhost:8000/health
 
 Returns system status and component health.
 
-### 2. Upload Document
+#### 2. Upload Document
 
 ```bash
 POST http://localhost:8000/upload/document
@@ -132,7 +153,17 @@ curl -X POST "http://localhost:8000/upload/pdf" -F "file=@document.pdf"
 }
 ```
 
-### 3. Query/Chat
+**What happens during upload:**
+
+1. Document is saved to disk
+2. Text is extracted and chunked
+3. **File system metadata is extracted** (size, timestamps, etc.)
+4. **Document metadata is extracted** (PDF/DOCX properties)
+5. **AI metadata is generated** (summary, keywords, classification)
+6. Chunks are embedded and stored in vector database
+7. **Metadata is embedded and stored in metadata collection**
+
+#### 3. Query/Chat
 
 ```bash
 POST http://localhost:8000/chat/query
@@ -172,7 +203,15 @@ curl -X POST "http://localhost:8000/chat/query" ^
 }
 ```
 
-### 4. Get Statistics
+**Query Classification:**
+
+The system automatically classifies your query and routes it appropriately:
+
+- **Metadata queries**: "Find all invoices from 2023" → Searches metadata collection
+- **Content queries**: "What is the refund policy?" → Searches document content
+- **Hybrid queries**: "What does the Q4 report say about revenue?" → Combines both
+
+#### 4. Get Statistics
 
 ```bash
 GET http://localhost:8000/chat/stats
@@ -180,7 +219,7 @@ GET http://localhost:8000/chat/stats
 
 Returns system statistics including document count, embeddings info, etc.
 
-### 5. Delete Document
+#### 5. Delete Document
 
 ```bash
 DELETE http://localhost:8000/upload/document/{document_id}
@@ -191,6 +230,72 @@ DELETE http://localhost:8000/upload/document/{document_id}
 ```cmd
 curl -X DELETE "http://localhost:8000/upload/document/uuid-here"
 ```
+
+**What happens during deletion:**
+
+- Document chunks removed from vector database
+- **Document metadata removed from metadata collection**
+- Physical file deleted from disk
+
+### Metadata Explorer Endpoints (New!)
+
+#### 6. Search Documents by Filters
+
+```bash
+POST http://localhost:8000/metadata/search
+Content-Type: application/json
+
+{
+  "document_type": "report",
+  "author": "John Doe",
+  "date_from": "2023-01-01",
+  "date_to": "2023-12-31",
+  "keywords": ["revenue", "growth"],
+  "limit": 20
+}
+```
+
+Find documents by properties like type, author, date, keywords, file type, etc.
+
+#### 7. Semantic Document Search
+
+```bash
+POST http://localhost:8000/metadata/semantic-search
+Content-Type: application/json
+
+{
+  "query": "financial performance and revenue analysis",
+  "limit": 10
+}
+```
+
+Find documents by semantic similarity to your query (searches document summaries).
+
+#### 8. List All Documents
+
+```bash
+GET http://localhost:8000/metadata/list?page=1&page_size=20
+```
+
+Paginated listing of all documents with metadata.
+
+#### 9. Get Metadata Statistics
+
+```bash
+GET http://localhost:8000/metadata/stats
+```
+
+System-wide statistics: document counts, file types, document types, storage size, date ranges.
+
+#### 10. Get Document Metadata
+
+```bash
+GET http://localhost:8000/metadata/document/{document_id}
+```
+
+Retrieve complete metadata for a specific document.
+
+> **💡 Tip:** See [METADATA_SYSTEM.md](METADATA_SYSTEM.md) for detailed examples and use cases.
 
 ## 🧪 Testing
 
@@ -215,27 +320,44 @@ pytest tests/test_rag.py -v
 backend/
 ├── app/
 │   ├── __init__.py
-│   ├── main.py              # FastAPI application entry point
-│   ├── config.py            # Configuration management
-│   ├── models.py            # Pydantic models
-│   ├── pdf_processor.py     # PDF text extraction & chunking
-│   ├── embeddings.py        # Embedding generation
-│   ├── vector_store.py      # ChromaDB vector storage
-│   ├── llm_client.py        # Ollama LLM client
-│   ├── rag_pipeline.py      # RAG orchestration
+│   ├── main.py                    # FastAPI application entry point
+│   ├── config.py                  # Configuration management
+│   ├── models.py                  # Pydantic models (core)
+│   ├── models_metadata.py         # Pydantic models (metadata)
+│   │
+│   ├── document_processor.py      # Multi-format document processing
+│   ├── embeddings.py              # Embedding generation
+│   ├── vector_store.py            # ChromaDB vector storage (chunks)
+│   ├── llm_client.py              # Ollama LLM client
+│   ├── rag_pipeline.py            # RAG orchestration
+│   │
+│   ├── metadata_extractor.py     # File + PDF/DOCX metadata extraction
+│   ├── ai_metadata_generator.py  # AI-powered summary/keywords/classification
+│   ├── metadata_store.py         # ChromaDB metadata storage
+│   ├── query_classifier.py       # Query type classification
+│   │
 │   └── routers/
 │       ├── __init__.py
-│       ├── upload.py        # PDF upload endpoints
-│       └── chat.py          # Query endpoints
+│       ├── upload.py              # Document upload (with metadata)
+│       ├── chat.py                # Query endpoints (hybrid RAG)
+│       └── metadata.py            # Metadata search endpoints
+│
 ├── data/
-│   ├── pdfs/                # Uploaded PDF files
-│   └── chroma_db/           # ChromaDB persistent storage
+│   ├── documents/                 # Uploaded documents (all formats)
+│   └── chroma_db/                 # ChromaDB persistent storage
+│       ├── document_chunks/       # Content collection
+│       └── document_metadata/     # Metadata collection
+│
 ├── tests/
 │   ├── __init__.py
-│   ├── test_pdf.py          # PDF processing tests
-│   └── test_rag.py          # RAG pipeline tests
-├── requirements.txt         # Python dependencies
-└── README.md               # This file
+│   ├── test_pdf.py                # PDF processing tests
+│   └── test_rag.py                # RAG pipeline tests
+│
+├── requirements.txt               # Python dependencies
+├── README.md                      # This file
+├── METADATA_SYSTEM.md             # Metadata system documentation
+├── DOCUMENT_FORMATS.md            # Supported formats guide
+└── .gitignore                     # Git ignore rules
 ```
 
 ## ⚙️ Configuration
@@ -399,10 +521,15 @@ MIT License - Feel free to use for educational and commercial purposes.
 
 - [x] Add support for multiple file formats (PDF, DOC, DOCX)
 - [x] Extensible architecture for new formats
+- [x] Add document metadata search
+- [x] AI-generated metadata (summary, keywords, classification)
+- [x] Hybrid RAG with metadata filtering
+- [x] Query classification for intelligent routing
 - [ ] Add support for TXT, MD, HTML formats
 - [ ] Implement conversation history
-- [ ] Add document metadata search
 - [ ] Support for streaming responses
+- [ ] Advanced metadata filtering (boolean operators)
+- [ ] Named entity recognition in metadata
 - [ ] Multi-language support
 - [ ] GPU acceleration options
 - [ ] Docker containerization

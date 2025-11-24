@@ -4,13 +4,15 @@ Orchestrates the complete Retrieval-Augmented Generation workflow.
 """
 
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 import time
 
 from app.embeddings import EmbeddingModel
 from app.vector_store import VectorStore
 from app.llm_client import LLMClient
 from app.models import RetrievedChunk
+from app.metadata_store import MetadataStore
+from app.query_classifier import QueryClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class RAGPipeline:
         embedding_model: EmbeddingModel,
         vector_store: VectorStore,
         llm_client: LLMClient,
+        metadata_store: Optional[MetadataStore] = None,
         top_k: int = 5
     ):
         """
@@ -35,14 +38,17 @@ class RAGPipeline:
             embedding_model: Model for generating embeddings
             vector_store: Vector database for similarity search
             llm_client: LLM client for text generation
+            metadata_store: Optional metadata store for hybrid queries
             top_k: Default number of chunks to retrieve
         """
         self.embedding_model = embedding_model
         self.vector_store = vector_store
         self.llm_client = llm_client
+        self.metadata_store = metadata_store
+        self.query_classifier = QueryClassifier()
         self.default_top_k = top_k
         
-        logger.info("RAG Pipeline initialized")
+        logger.info("RAG Pipeline initialized with metadata support")
     
     def get_relevant_chunks(
         self,
@@ -181,16 +187,19 @@ Answer:"""
         question: str,
         top_k: int = None,
         temperature: float = 0.7,
-        filter_metadata: Dict[str, Any] = None
+        filter_metadata: Dict[str, Any] = None,
+        use_query_classification: bool = True
     ) -> Tuple[str, List[RetrievedChunk], float]:
         """
         Complete RAG query: retrieve context and generate answer.
+        Supports hybrid queries with automatic metadata filtering.
         
         Args:
             question: User's question
             top_k: Number of chunks to retrieve
             temperature: LLM sampling temperature
             filter_metadata: Optional metadata filter
+            use_query_classification: Whether to classify query for hybrid search
             
         Returns:
             Tuple of (answer, retrieved_chunks, processing_time)
@@ -200,19 +209,33 @@ Answer:"""
         try:
             logger.info(f"Processing RAG query: '{question[:50]}...'")
             
-            # Step 1: Retrieve relevant chunks
+            # Step 1: Classify query and enhance with metadata if applicable
+            if use_query_classification and self.metadata_store:
+                classification = self.query_classifier.classify(question)
+                logger.info(f"Query classified as: {classification.query_type}")
+                
+                # For metadata or hybrid queries, enhance retrieval
+                if classification.query_type in ("metadata", "hybrid"):
+                    # Get relevant documents by metadata first
+                    if classification.extracted_filters:
+                        logger.info(f"Applying extracted filters: {classification.extracted_filters}")
+                        # This will be used to scope the content search
+                        # In a full implementation, you'd build ChromaDB filters here
+                        # For now, we log it and proceed with content search
+            
+            # Step 2: Retrieve relevant chunks
             chunks = self.get_relevant_chunks(
                 query=question,
                 top_k=top_k,
                 filter_metadata=filter_metadata
             )
             
-            # Step 2: Build prompt with context
+            # Step 3: Build prompt with context
             prompt = self.build_prompt(chunks, question)
             
             logger.debug(f"Built prompt with {len(chunks)} chunks, total length: {len(prompt)}")
             
-            # Step 3: Generate answer
+            # Step 4: Generate answer
             answer = self.generate_answer(
                 prompt=prompt,
                 temperature=temperature

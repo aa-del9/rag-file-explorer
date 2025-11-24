@@ -12,7 +12,7 @@ import sys
 
 from app.config import settings
 from app.models import HealthResponse
-from app.routers import upload, chat
+from app.routers import upload, chat, metadata
 from app.embeddings import get_embedding_model
 from app.vector_store import VectorStore
 from app.llm_client import LLMClient
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
             model_name=settings.EMBEDDING_MODEL,
             device=settings.EMBEDDING_DEVICE
         )
-        logger.info(f"✓ Embedding model loaded: {settings.EMBEDDING_MODEL}")
+        logger.info(f"[OK] Embedding model loaded: {settings.EMBEDDING_MODEL}")
         
         # Initialize vector store
         logger.info("Initializing vector store...")
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
             persist_directory=settings.CHROMA_DIR,
             collection_name=settings.CHROMA_COLLECTION_NAME
         )
-        logger.info(f"✓ Vector store ready: {vector_store.get_collection_stats()['total_chunks']} chunks")
+        logger.info(f"[OK] Vector store ready: {vector_store.get_collection_stats()['total_chunks']} chunks")
         
         # Initialize LLM client
         logger.info("Connecting to Ollama...")
@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
             model=settings.OLLAMA_MODEL,
             timeout=settings.OLLAMA_TIMEOUT
         )
-        logger.info(f"✓ Ollama connected: {settings.OLLAMA_MODEL}")
+        logger.info(f"[OK] Ollama connected: {settings.OLLAMA_MODEL}")
         
         logger.info("=" * 60)
         logger.info("All systems ready!")
@@ -122,6 +122,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(upload.router)
 app.include_router(chat.router)
+app.include_router(metadata.router)
 
 
 # Root endpoint
@@ -142,6 +143,11 @@ async def root():
             "delete_document": "/upload/document/{id}",
             "query": "/chat/query",
             "stats": "/chat/stats",
+            "metadata_search": "/metadata/search",
+            "metadata_semantic_search": "/metadata/semantic-search",
+            "metadata_list": "/metadata/list",
+            "metadata_stats": "/metadata/stats",
+            "metadata_document": "/metadata/document/{id}",
             "docs": "/docs"
         }
     }
