@@ -209,13 +209,13 @@ async def upload_document(file: UploadFile = File(...)):
             # Generate AI metadata (summary, keywords, document type)
             full_text = " ".join(chunk_texts)
             ai_metadata = ai_metadata_generator.generate_all_metadata(full_text, file.filename)
-            logger.info(f"Generated AI metadata: type={ai_metadata['document_type']}, keywords={len(ai_metadata.get('keywords', []))}")
+            logger.info(f"Generated AI metadata: type={ai_metadata.get('ai_document_type', 'unknown')}, keywords={len(ai_metadata.get('ai_keywords', []))}")
             
             # Merge all metadata
             combined_metadata = {**extracted_metadata, **ai_metadata}
             
             # Get the summary for embedding
-            summary_text = ai_metadata.get("summary", "")
+            summary_text = ai_metadata.get("ai_summary", "")
             
             # Generate embedding for the summary
             summary_embedding = None
