@@ -13,6 +13,7 @@ import sys
 from app.config import settings
 from app.models import HealthResponse
 from app.routers import upload, chat, metadata
+from app.routers import documents
 from app.embeddings import get_embedding_model
 from app.vector_store import VectorStore
 from app.llm_client import LLMClient
@@ -123,6 +124,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(upload.router)
 app.include_router(chat.router)
 app.include_router(metadata.router)
+app.include_router(documents.router)
 
 
 # Root endpoint
@@ -148,6 +150,12 @@ async def root():
             "metadata_list": "/metadata/list",
             "metadata_stats": "/metadata/stats",
             "metadata_document": "/metadata/document/{id}",
+            "documents_list": "/documents",
+            "documents_search": "/documents/search",
+            "documents_recommend": "/documents/recommend",
+            "documents_similar": "/documents/{id}/similar",
+            "documents_summary": "/documents/{id}/summary",
+            "documents_overview": "/documents/stats/overview",
             "docs": "/docs"
         }
     }

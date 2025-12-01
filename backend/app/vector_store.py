@@ -258,3 +258,172 @@ class VectorStore:
             return True
         except Exception:
             return False
+    
+    def get_chunks_by_document(
+        self,
+        document_id: str,
+        limit: int = 100
+    ) -> Tuple[List[str], List[Dict[str, Any]], List[str]]:
+        """
+        Get all chunks for a specific document.
+        
+        Args:
+            document_id: Document identifier
+            limit: Maximum chunks to return
+            
+        Returns:
+            Tuple of (documents, metadatas, ids)
+        """
+        try:
+            results = self.collection.get(
+                where={"document_id": document_id},
+                limit=limit,
+                include=["documents", "metadatas"]
+            )
+            
+            return (
+                results.get("documents", []),
+                results.get("metadatas", []),
+                results.get("ids", [])
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get chunks by document: {str(e)}")
+            return [], [], []
+    
+    def query_with_scores(
+        self,
+        query_embedding: List[float],
+        top_k: int = 5,
+        filter_metadata: Optional[Dict[str, Any]] = None,
+        include_embeddings: bool = False
+    ) -> List[Dict[str, Any]]:
+        """
+        Query the vector store and return structured results with scores.
+        
+        Args:
+            query_embedding: Query embedding vector
+            top_k: Number of results to return
+            filter_metadata: Optional metadata filter
+            include_embeddings: Whether to include embeddings in results
+            
+        Returns:
+            List of result dicts with text, metadata, score, and id
+        """
+        try:
+            logger.info(f"Querying ChromaDB with scores for top {top_k} results")
+            
+            include = ["documents", "metadatas", "distances"]
+            if include_embeddings:
+                include.append("embeddings")
+            
+            query_params = {
+                "query_embeddings": [query_embedding],
+                "n_results": min(top_k, self.collection.count()),
+                "include": include
+            }
+            
+            if filter_metadata:
+                query_params["where"] = filter_metadata
+            
+            results = self.collection.query(**query_params)
+            
+            structured_results = []
+            for i in range(len(results["ids"][0])):
+                similarity = 1.0 / (1.0 + results["distances"][0][i])
+                
+                result = {
+                    "chunk_id": results["ids"][0][i],
+                    "text": results["documents"][0][i],
+                    "metadata": results["metadatas"][0][i],
+                    "distance": results["distances"][0][i],
+                    "similarity_score": round(similarity, 4)
+                }
+                
+                if include_embeddings and results.get("embeddings"):
+                    result["embedding"] = results["embeddings"][0][i]
+                
+                structured_results.append(result)
+            
+            logger.info(f"Query with scores returned {len(structured_results)} results")
+            return structured_results
+            
+        except Exception as e:
+            logger.error(f"Failed to query with scores: {str(e)}")
+            return []
+    
+    def aggregate_document_scores(
+        self,
+        query_embedding: List[float],
+        top_k_chunks: int = 50,
+        top_k_docs: int = 10,
+        aggregation_method: str = "max"  # "max", "mean", "top3_mean"
+    ) -> List[Dict[str, Any]]:
+        """
+        Query chunks and aggregate scores by document.
+        
+        Args:
+            query_embedding: Query embedding vector
+            top_k_chunks: Number of chunks to retrieve
+            top_k_docs: Number of documents to return
+            aggregation_method: How to aggregate chunk scores per document
+            
+        Returns:
+            List of documents with aggregated scores
+        """
+        try:
+            # Get top chunks
+            chunk_results = self.query_with_scores(
+                query_embedding=query_embedding,
+                top_k=top_k_chunks
+            )
+            
+            # Aggregate by document
+            doc_scores: Dict[str, Dict] = {}
+            
+            for chunk in chunk_results:
+                doc_id = chunk["metadata"].get("document_id", "unknown")
+                score = chunk["similarity_score"]
+                
+                if doc_id not in doc_scores:
+                    doc_scores[doc_id] = {
+                        "document_id": doc_id,
+                        "scores": [],
+                        "best_chunk": None,
+                        "chunk_count": 0
+                    }
+                
+                doc_scores[doc_id]["scores"].append(score)
+                doc_scores[doc_id]["chunk_count"] += 1
+                
+                # Track best chunk
+                if (doc_scores[doc_id]["best_chunk"] is None or 
+                    score > doc_scores[doc_id]["best_chunk"]["similarity_score"]):
+                    doc_scores[doc_id]["best_chunk"] = chunk
+            
+            # Calculate aggregated scores
+            for doc_id, data in doc_scores.items():
+                scores = data["scores"]
+                if aggregation_method == "max":
+                    data["aggregated_score"] = max(scores)
+                elif aggregation_method == "mean":
+                    data["aggregated_score"] = sum(scores) / len(scores)
+                elif aggregation_method == "top3_mean":
+                    top3 = sorted(scores, reverse=True)[:3]
+                    data["aggregated_score"] = sum(top3) / len(top3)
+                else:
+                    data["aggregated_score"] = max(scores)
+            
+            # Sort by aggregated score and return top documents
+            sorted_docs = sorted(
+                doc_scores.values(),
+                key=lambda x: x["aggregated_score"],
+                reverse=True
+            )[:top_k_docs]
+            
+            logger.info(f"Aggregated scores for {len(sorted_docs)} documents")
+            return sorted_docs
+            
+        except Exception as e:
+            logger.error(f"Failed to aggregate document scores: {str(e)}")
+            return []

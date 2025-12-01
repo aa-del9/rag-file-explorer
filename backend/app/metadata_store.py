@@ -171,7 +171,7 @@ class MetadataStore:
                 limit=limit,
                 include=["metadatas", "documents"]
             )
-            print("results: ",results)
+
             logger.info(f"Filter search returned {len(results['ids'])} results")
             documents = []
             for i, doc_id in enumerate(results['ids']):
@@ -339,3 +339,74 @@ class MetadataStore:
         except Exception as e:
             logger.error(f"Failed to get statistics: {str(e)}")
             return {"error": str(e)}
+    
+    def get_document_embedding(self, document_id: str) -> Optional[List[float]]:
+        """
+        Get the embedding vector for a document.
+        
+        Args:
+            document_id: Document identifier
+            
+        Returns:
+            Embedding vector or None if not found
+        """
+        try:
+            results = self.collection.get(
+                ids=[document_id],
+                include=["embeddings"]
+            )
+            
+            if results['ids'] and results.get('embeddings'):
+                return results['embeddings'][0]
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to get document embedding: {str(e)}")
+            return None
+    
+    def update_document_tags(
+        self,
+        document_id: str,
+        tags: List[str]
+    ) -> bool:
+        """
+        Update tags for a document.
+        
+        Args:
+            document_id: Document identifier
+            tags: List of tags to set
+            
+        Returns:
+            True if successful
+        """
+        try:
+            # Get existing metadata
+            existing = self.get_document_metadata(document_id)
+            if not existing:
+                return False
+            
+            # Update tags
+            existing['tags'] = ", ".join(tags)
+            
+            # Get existing document text
+            results = self.collection.get(
+                ids=[document_id],
+                include=["documents", "embeddings"]
+            )
+            
+            if not results['ids']:
+                return False
+            
+            # Update in collection
+            self.collection.update(
+                ids=[document_id],
+                metadatas=[existing]
+            )
+            
+            logger.info(f"Updated tags for document: {document_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to update tags: {str(e)}")
+            return False

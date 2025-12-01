@@ -221,7 +221,7 @@ async def semantic_search_documents(request: SemanticSearchRequest):
                 filter_conditions.append({"ai_document_type": {"$eq": request.document_type.lower()}})
             
             filters = filter_conditions[0] if len(filter_conditions) == 1 else {"$and": filter_conditions}
-        
+            logger.info(f"Semantic search filters: {filters}")
         # Perform semantic search
         results = metadata_store.semantic_search(
             query_embedding=query_embedding,
@@ -232,11 +232,17 @@ async def semantic_search_documents(request: SemanticSearchRequest):
         # Convert to response models
         document_responses = [_convert_to_response_model(doc) for doc in results]
         
+        query_params = {"query": request.query, "top_k": request.top_k}
+        if request.file_type:
+            query_params["file_type"] = request.file_type
+        if request.document_type:
+            query_params["document_type"] = request.document_type
+        
         return MetadataSearchResponse(
             success=True,
             total_results=len(document_responses),
             documents=document_responses,
-            query_params={"query": request.query, "top_k": request.top_k}
+            query_params=query_params
         )
     
     except Exception as e:
