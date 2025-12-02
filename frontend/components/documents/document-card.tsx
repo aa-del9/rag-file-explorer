@@ -5,14 +5,18 @@
  * Displays document metadata in a card format
  */
 
+import { useState } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
 import { DocumentMetadata } from '@/lib/types';
 import { FileTypeIcon, FileTypeBadge } from './file-type-icon';
+import { openDocumentFile } from '@/lib/api';
 import {
     CalendarIcon,
     DocumentTextIcon,
     ClockIcon,
+    ArrowTopRightOnSquareIcon,
+    FolderOpenIcon,
 } from '@heroicons/react/24/outline';
 
 interface DocumentCardProps {
@@ -63,6 +67,8 @@ export function DocumentCard({
     variant = 'grid',
     onDelete,
 }: DocumentCardProps) {
+    const [isOpening, setIsOpening] = useState(false);
+
     const {
         document_id,
         filename,
@@ -78,6 +84,19 @@ export function DocumentCard({
     } = document;
 
     const previewText = preview_snippet || ai_summary;
+
+    const handleOpenFile = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOpening(true);
+        try {
+            await openDocumentFile(document_id);
+        } catch (error) {
+            console.error('Failed to open file:', error);
+        } finally {
+            setIsOpening(false);
+        }
+    };
 
     if (variant === 'list') {
         return (
@@ -121,12 +140,21 @@ export function DocumentCard({
                 </div>
 
                 {/* Actions */}
-                <div className="flex-shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="flex flex-shrink-0 items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                        onClick={handleOpenFile}
+                        disabled={isOpening}
+                        className="flex items-center gap-1 rounded-md bg-blue-100 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                        title="Open file with default application"
+                    >
+                        <FolderOpenIcon className="h-4 w-4" />
+                        {isOpening ? 'Opening...' : 'Open'}
+                    </button>
                     <Link
                         href={`/explorer/${document_id}`}
                         className="rounded-md bg-neutral-100 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                     >
-                        View
+                        Details
                     </Link>
                 </div>
             </div>
@@ -179,6 +207,17 @@ export function DocumentCard({
                     </span>
                 )}
                 <span>{formatFileSize(file_size_mb)}</span>
+
+                {/* Open File Button */}
+                <button
+                    onClick={handleOpenFile}
+                    disabled={isOpening}
+                    className="ml-auto flex items-center gap-1 rounded-md bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50"
+                    title="Open file with default application"
+                >
+                    <FolderOpenIcon className="h-3.5 w-3.5" />
+                    {isOpening ? '...' : 'Open'}
+                </button>
             </div>
         </div>
     );

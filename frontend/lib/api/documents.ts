@@ -180,6 +180,73 @@ export async function getDocumentsOverview(): Promise<{
 }
 
 // ============================================================
+// File Access
+// ============================================================
+
+/**
+ * Get the URL to view/download a document file in browser
+ */
+export function getDocumentFileUrl(
+  documentId: string,
+  inline: boolean = true
+): string {
+  return `${API_URL}/documents/${documentId}/file?inline=${inline}`;
+}
+
+/**
+ * Open document file in browser (for viewing PDFs etc.)
+ */
+export function viewDocumentInBrowser(documentId: string): void {
+  const url = getDocumentFileUrl(documentId, true);
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Download document file via browser
+ */
+export function downloadDocumentFile(documentId: string): void {
+  const url = getDocumentFileUrl(documentId, false);
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Open document file with the system's default application (e.g., Adobe Reader, Word)
+ * This calls the backend which triggers the OS to open the file locally.
+ */
+export async function openDocumentFile(
+  documentId: string
+): Promise<{ success: boolean; message: string; file_path: string }> {
+  return apiFetch<{ success: boolean; message: string; file_path: string }>(
+    `/documents/${documentId}/open`,
+    { method: "POST" }
+  );
+}
+
+/**
+ * Get the local file path for a document
+ */
+export async function getDocumentPath(documentId: string): Promise<{
+  success: boolean;
+  file_path: string;
+  folder_path: string;
+  exists: boolean;
+}> {
+  return apiFetch(`/documents/${documentId}/path`);
+}
+
+/**
+ * Copy text to clipboard
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================
 // Upload API
 // ============================================================
 

@@ -778,6 +778,214 @@ async def get_documents_overview():
 
 
 # ============================================================
+# FILE DOWNLOAD ENDPOINT
+# ============================================================
+
+@router.get("/{document_id}/file")
+async def download_document_file(
+    document_id: str = Path(..., description="Document ID"),
+    inline: bool = Query(default=True, description="Display inline (true) or download (false)")
+):
+    """
+    Download or view the original document file.
+    
+    **Query Parameters:**
+    - `inline`: If true, displays in browser; if false, triggers download
+    
+    **Example:**
+    ```
+    GET /documents/abc-123/file?inline=true
+    ```
+    """
+    from fastapi.responses import FileResponse
+    from pathlib import Path as PathLib
+    
+    components = get_components()
+    metadata_store = components['metadata_store']
+    
+    try:
+        # Get document metadata to find file path
+        doc_metadata = metadata_store.get_document_metadata(document_id)
+        
+        if not doc_metadata:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        file_path = doc_metadata.get('file_path', '')
+        filename = doc_metadata.get('filename', 'document')
+        
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+        
+        # Check if file exists
+        path = PathLib(file_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        
+        # Determine content type based on file extension
+        content_type_map = {
+            '.pdf': 'application/pdf',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.doc': 'application/msword',
+            '.txt': 'text/plain',
+            '.md': 'text/markdown',
+        }
+        
+        file_ext = path.suffix.lower()
+        media_type = content_type_map.get(file_ext, 'application/octet-stream')
+        
+        # Set disposition based on inline parameter
+        disposition = 'inline' if inline else 'attachment'
+        display_name = get_display_name(filename)
+        
+        return FileResponse(
+            path=str(path),
+            media_type=media_type,
+            filename=display_name,
+            headers={
+                'Content-Disposition': f'{disposition}; filename="{display_name}"'
+            }
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Download file failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to download file: {str(e)}")
+
+
+# ============================================================
+# OPEN FILE IN SYSTEM APPLICATION
+# ============================================================
+
+@router.post("/{document_id}/open")
+async def open_document_in_system(
+    document_id: str = Path(..., description="Document ID")
+):
+    """
+    Open the document file with the system's default application.
+    
+    This endpoint triggers the OS to open the file (e.g., PDF opens in Adobe Reader,
+    DOCX opens in Word, etc.).
+    
+    **Example:**
+    ```
+    POST /documents/abc-123/open
+    ```
+    
+    **Response:**
+    ```json
+    {
+        "success": true,
+        "message": "File opened successfully",
+        "file_path": "C:\\Documents\\report.pdf"
+    }
+    ```
+    """
+    import subprocess
+    import platform
+    from pathlib import Path as PathLib
+    
+    components = get_components()
+    metadata_store = components['metadata_store']
+    
+    try:
+        # Get document metadata to find file path
+        doc_metadata = metadata_store.get_document_metadata(document_id)
+        
+        if not doc_metadata:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        file_path = doc_metadata.get('file_path', '')
+        
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+        
+        # Check if file exists
+        path = PathLib(file_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="File not found on disk")
+        
+        # Open file with system default application
+        system = platform.system()
+        
+        if system == 'Windows':
+            # Windows: use os.startfile or subprocess with 'start'
+            import os
+            os.startfile(str(path))
+        elif system == 'Darwin':
+            # macOS: use 'open' command
+            subprocess.Popen(['open', str(path)])
+        else:
+            # Linux: use 'xdg-open'
+            subprocess.Popen(['xdg-open', str(path)])
+        
+        logger.info(f"Opened file in system application: {file_path}")
+        
+        return {
+            "success": True,
+            "message": "File opened successfully",
+            "file_path": file_path
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Open file failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to open file: {str(e)}")
+
+
+@router.get("/{document_id}/path")
+async def get_document_path(
+    document_id: str = Path(..., description="Document ID")
+):
+    """
+    Get the local file path for a document.
+    
+    Useful for copying to clipboard or showing in File Explorer.
+    
+    **Response:**
+    ```json
+    {
+        "success": true,
+        "file_path": "C:\\Documents\\report.pdf",
+        "folder_path": "C:\\Documents",
+        "exists": true
+    }
+    ```
+    """
+    from pathlib import Path as PathLib
+    
+    components = get_components()
+    metadata_store = components['metadata_store']
+    
+    try:
+        doc_metadata = metadata_store.get_document_metadata(document_id)
+        
+        if not doc_metadata:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        file_path = doc_metadata.get('file_path', '')
+        
+        if not file_path:
+            raise HTTPException(status_code=404, detail="File path not found")
+        
+        path = PathLib(file_path)
+        
+        return {
+            "success": True,
+            "file_path": str(path),
+            "folder_path": str(path.parent),
+            "exists": path.exists()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get path failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get path: {str(e)}")
+
+
+# ============================================================
 # SINGLE DOCUMENT ENDPOINT (must be after specific routes)
 # ============================================================
 

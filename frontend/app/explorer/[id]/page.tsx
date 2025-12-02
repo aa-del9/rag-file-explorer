@@ -5,10 +5,12 @@
  * Shows detailed information about a single document
  */
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useDocument, useDocumentSummary, useSimilarDocuments } from '@/lib/hooks';
 import { FileTypeIcon, FileTypeBadge, DocumentCard } from '@/components/documents';
+import { openDocumentFile, viewDocumentInBrowser, copyToClipboard } from '@/lib/api';
 import {
     ArrowLeftIcon,
     CalendarIcon,
@@ -17,6 +19,11 @@ import {
     TagIcon,
     SparklesIcon,
     ClockIcon,
+    FolderIcon,
+    FolderOpenIcon,
+    ArrowTopRightOnSquareIcon,
+    ClipboardDocumentIcon,
+    CheckIcon,
 } from '@heroicons/react/24/outline';
 
 function formatDate(dateString: string): string {
@@ -47,6 +54,10 @@ export default function DocumentDetailPage() {
     const router = useRouter();
     const documentId = params.id as string;
 
+    // UI state
+    const [isOpening, setIsOpening] = useState(false);
+    const [copied, setCopied] = useState(false);
+
     // Fetch document details
     const {
         data: document,
@@ -66,6 +77,29 @@ export default function DocumentDetailPage() {
         data: similarData,
         isLoading: isLoadingSimilar,
     } = useSimilarDocuments(documentId, 4);
+
+    // Handler to open file with system application
+    const handleOpenFile = async () => {
+        setIsOpening(true);
+        try {
+            await openDocumentFile(documentId);
+        } catch (error) {
+            console.error('Failed to open file:', error);
+        } finally {
+            setIsOpening(false);
+        }
+    };
+
+    // Handler to copy file path
+    const handleCopyPath = async () => {
+        if (document?.file_path) {
+            const success = await copyToClipboard(document.file_path);
+            if (success) {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            }
+        }
+    };
 
     if (isLoadingDoc) {
         return (
@@ -179,6 +213,46 @@ export default function DocumentDetailPage() {
                                 ))}
                             </div>
                         )}
+
+                        {/* File Path */}
+                        {document.file_path && (
+                            <div className="mt-4 flex items-center gap-2 rounded-lg bg-neutral-50 px-3 py-2 dark:bg-neutral-800">
+                                <FolderIcon className="h-4 w-4 flex-shrink-0 text-neutral-500" />
+                                <span className="flex-1 truncate font-mono text-xs text-neutral-600 dark:text-neutral-400" title={document.file_path}>
+                                    {document.file_path}
+                                </span>
+                                <button
+                                    onClick={handleCopyPath}
+                                    className="flex-shrink-0 rounded p-1 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                                    title="Copy path to clipboard"
+                                >
+                                    {copied ? (
+                                        <CheckIcon className="h-4 w-4 text-green-500" />
+                                    ) : (
+                                        <ClipboardDocumentIcon className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                                onClick={handleOpenFile}
+                                disabled={isOpening}
+                                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            >
+                                <FolderOpenIcon className="h-4 w-4" />
+                                {isOpening ? 'Opening...' : 'Open with App'}
+                            </button>
+                            <button
+                                onClick={() => viewDocumentInBrowser(document.document_id)}
+                                className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 transition-colors"
+                            >
+                                <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                                Download
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
