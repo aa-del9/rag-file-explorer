@@ -4,6 +4,7 @@ Provides advanced search, recommendations, similar documents, and summaries.
 """
 
 import logging
+import re
 from fastapi import APIRouter, HTTPException, Query, Path
 from typing import Optional, List
 from datetime import datetime
@@ -31,6 +32,34 @@ from app.summary_cache import SummaryCache, SmartSummaryGenerator
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["documents", "explorer", "search"])
+
+# UUID pattern: 8-4-4-4-12 hex characters
+UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_', re.IGNORECASE)
+
+
+def get_display_name(filename: str) -> str:
+    """
+    Extract the display name from a filename by removing the UUID prefix.
+    
+    Filenames are stored as: {uuid}_{original_filename}
+    e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890_report.pdf" -> "report.pdf"
+    
+    Args:
+        filename: The stored filename with UUID prefix
+        
+    Returns:
+        The original filename without the UUID prefix
+    """
+    if not filename:
+        return filename
+    
+    # Try to remove UUID prefix
+    match = UUID_PATTERN.match(filename)
+    if match:
+        return filename[match.end():]
+    
+    return filename
+
 
 # Lazy-loaded components
 _metadata_store = None
@@ -117,9 +146,14 @@ def _convert_to_metadata_response(doc: dict) -> DocumentMetadataResponse:
     if len(preview) > 200:
         preview = preview[:200] + "..."
     
+    # Get filename and display name
+    filename = metadata.get('filename', 'unknown')
+    display_name = get_display_name(filename)
+    
     return DocumentMetadataResponse(
         document_id=doc.get('document_id', ''),
-        filename=metadata.get('filename', 'unknown'),
+        filename=filename,
+        display_name=display_name,
         file_path=metadata.get('file_path', ''),
         file_size_mb=float(metadata.get('file_size_mb', 0)),
         file_type=metadata.get('file_type', 'unknown'),
@@ -256,56 +290,11 @@ async def list_documents(
         raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
 
 
-@router.get("/{document_id}", response_model=DocumentMetadataResponse)
-async def get_document(document_id: str = Path(..., description="Document ID")):
-    """
-    Get detailed metadata for a specific document.
-    
-    **Example Response:**
-    ```json
-    {
-        "document_id": "abc-123",
-        "filename": "quarterly_report.pdf",
-        "file_path": "/data/documents/abc-123_quarterly_report.pdf",
-        "file_size_mb": 2.5,
-        "file_type": ".pdf",
-        "page_count": 15,
-        "created_at": "2024-01-15T10:30:00",
-        "modified_at": "2024-01-15T10:30:00",
-        "title": "Q4 2023 Quarterly Report",
-        "author": "Finance Team",
-        "ai_summary": "This document presents the financial results...",
-        "ai_keywords": ["finance", "quarterly", "report"],
-        "ai_document_type": "financial_report"
-    }
-    ```
-    """
-    components = get_components()
-    metadata_store = components['metadata_store']
-    
-    try:
-        metadata_dict = metadata_store.get_document_metadata(document_id)
-        
-        if not metadata_dict:
-            raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
-        
-        doc = {
-            'document_id': document_id,
-            'metadata': metadata_dict
-        }
-        
-        return _convert_to_metadata_response(doc)
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Get document failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get document: {str(e)}")
-
-
 # ============================================================
 # ADVANCED SEARCH ENDPOINTS
 # ============================================================
+# NOTE: These specific routes MUST be defined before /{document_id}
+# to avoid the catch-all route matching "search" as a document_id
 
 @router.post("/search", response_model=AdvancedSearchResponse)
 async def advanced_search(request: AdvancedSearchRequest):
@@ -433,7 +422,7 @@ async def search_documents_get(
         sort_by=sort_field,
         sort_order=SortOrder(sort_order.lower()) if sort_order else SortOrder.desc
     )
-    
+    print(request)
     return await advanced_search(request)
 
 
@@ -754,6 +743,57 @@ async def get_documents_overview():
     except Exception as e:
         logger.error(f"Get overview failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get overview: {str(e)}")
+
+
+# ============================================================
+# SINGLE DOCUMENT ENDPOINT (must be after specific routes)
+# ============================================================
+
+@router.get("/{document_id}", response_model=DocumentMetadataResponse)
+async def get_document(document_id: str = Path(..., description="Document ID")):
+    """
+    Get detailed metadata for a specific document.
+    
+    **Example Response:**
+    ```json
+    {
+        "document_id": "abc-123",
+        "filename": "quarterly_report.pdf",
+        "file_path": "/data/documents/abc-123_quarterly_report.pdf",
+        "file_size_mb": 2.5,
+        "file_type": ".pdf",
+        "page_count": 15,
+        "created_at": "2024-01-15T10:30:00",
+        "modified_at": "2024-01-15T10:30:00",
+        "title": "Q4 2023 Quarterly Report",
+        "author": "Finance Team",
+        "ai_summary": "This document presents the financial results...",
+        "ai_keywords": ["finance", "quarterly", "report"],
+        "ai_document_type": "financial_report"
+    }
+    ```
+    """
+    components = get_components()
+    metadata_store = components['metadata_store']
+    
+    try:
+        metadata_dict = metadata_store.get_document_metadata(document_id)
+        
+        if not metadata_dict:
+            raise HTTPException(status_code=404, detail=f"Document not found: {document_id}")
+        
+        doc = {
+            'document_id': document_id,
+            'metadata': metadata_dict
+        }
+        
+        return _convert_to_metadata_response(doc)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Get document failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get document: {str(e)}")
 
 
 @router.delete("/{document_id}/summary/cache")

@@ -119,12 +119,12 @@ export default function DocumentDetailPage() {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
                             <h1 className="truncate text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-                                {document.filename}
+                                {document.display_name}
                             </h1>
                             <FileTypeBadge fileType={document.file_type} />
                         </div>
 
-                        {document.title && document.title !== document.filename && (
+                        {document.title && document.title !== document.display_name && (
                             <p className="mt-1 text-lg text-neutral-600 dark:text-neutral-400">
                                 {document.title}
                             </p>

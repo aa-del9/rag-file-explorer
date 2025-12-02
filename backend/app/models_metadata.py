@@ -36,6 +36,7 @@ class DocumentMetadataResponse(BaseModel):
     """Response model for document metadata."""
     document_id: str
     filename: str
+    display_name: str  # Filename without UUID prefix
     file_path: str
     file_size_mb: float
     file_type: str
@@ -56,6 +57,7 @@ class DocumentSearchResult(BaseModel):
     """Enhanced search result with both document and chunk scores."""
     document_id: str
     filename: str
+    display_name: str  # Filename without UUID prefix
     file_path: str
     file_size_mb: float
     file_type: str

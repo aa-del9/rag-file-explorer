@@ -5,6 +5,7 @@
 export interface DocumentMetadata {
   document_id: string;
   filename: string;
+  display_name: string; // Filename without UUID prefix
   file_path: string;
   file_size_mb: number;
   file_type: string;
@@ -49,7 +50,7 @@ export interface DocumentSearchResponse {
   total_results: number;
   documents: DocumentSearchResult[];
   query_params: Record<string, unknown>;
-  search_type: 'semantic' | 'metadata' | 'hybrid';
+  search_type: "semantic" | "metadata" | "hybrid";
   processing_time_ms: number | null;
 }
 
@@ -98,8 +99,13 @@ export interface DocumentSummaryResponse {
 }
 
 // Filter and sorting types
-export type SortField = 'filename' | 'created_at' | 'modified_at' | 'file_size_mb' | 'page_count';
-export type SortOrder = 'asc' | 'desc';
+export type SortField =
+  | "filename"
+  | "created_at"
+  | "modified_at"
+  | "file_size_mb"
+  | "page_count";
+export type SortOrder = "asc" | "desc";
 
 export interface DocumentFilters {
   filename_contains?: string;

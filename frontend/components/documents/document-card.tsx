@@ -66,6 +66,7 @@ export function DocumentCard({
     const {
         document_id,
         filename,
+        display_name,
         file_type,
         file_size_mb,
         page_count,
@@ -93,7 +94,7 @@ export function DocumentCard({
                             href={`/explorer/${document_id}`}
                             className="truncate font-medium text-neutral-900 hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
                         >
-                            {filename}
+                            {display_name}
                         </Link>
                         <FileTypeBadge fileType={file_type} />
                     </div>
@@ -146,7 +147,7 @@ export function DocumentCard({
                 href={`/explorer/${document_id}`}
                 className="mt-3 line-clamp-2 font-medium text-neutral-900 hover:text-blue-600 dark:text-neutral-100 dark:hover:text-blue-400"
             >
-                {filename}
+                {display_name}
             </Link>
 
             {/* Preview */}

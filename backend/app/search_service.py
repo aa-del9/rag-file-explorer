@@ -4,6 +4,7 @@ Provides advanced search functionality combining metadata and semantic search.
 """
 
 import logging
+import re
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import time
@@ -20,6 +21,26 @@ from app.models_metadata import (
 )
 
 logger = logging.getLogger(__name__)
+
+# UUID pattern: 8-4-4-4-12 hex characters
+UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_', re.IGNORECASE)
+
+
+def get_display_name(filename: str) -> str:
+    """
+    Extract the display name from a filename by removing the UUID prefix.
+    
+    Filenames are stored as: {uuid}_{original_filename}
+    e.g., "a1b2c3d4-e5f6-7890-abcd-ef1234567890_report.pdf" -> "report.pdf"
+    """
+    if not filename:
+        return filename
+    
+    match = UUID_PATTERN.match(filename)
+    if match:
+        return filename[match.end():]
+    
+    return filename
 
 
 class SearchService:
@@ -464,9 +485,14 @@ class SearchService:
         if len(preview) > 200:
             preview = preview[:200] + "..."
         
+        # Get filename and display name
+        filename = metadata.get('filename', 'unknown')
+        display_name = get_display_name(filename)
+        
         return DocumentSearchResult(
             document_id=doc.get('document_id', ''),
-            filename=metadata.get('filename', 'unknown'),
+            filename=filename,
+            display_name=display_name,
             file_path=metadata.get('file_path', ''),
             file_size_mb=float(metadata.get('file_size_mb', 0)),
             file_type=metadata.get('file_type', 'unknown'),
@@ -498,9 +524,14 @@ class SearchService:
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(',') if t.strip()]
         
+        # Get filename and display name
+        filename = metadata.get('filename', 'unknown')
+        display_name = get_display_name(filename)
+        
         return DocumentSearchResult(
             document_id=doc_id,
-            filename=metadata.get('filename', 'unknown'),
+            filename=filename,
+            display_name=display_name,
             file_path=metadata.get('file_path', ''),
             file_size_mb=float(metadata.get('file_size_mb', 0)),
             file_type=metadata.get('file_type', 'unknown'),
