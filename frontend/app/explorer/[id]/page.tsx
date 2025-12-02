@@ -209,13 +209,13 @@ export default function DocumentDetailPage() {
                             {summaryData.summary}
                         </p>
 
-                        {summaryData.key_topics?.length > 0 && (
+                        {(summaryData.key_topics?.length ?? 0) > 0 && (
                             <div>
                                 <h3 className="text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
                                     Key Topics
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {summaryData.key_topics.map((topic) => (
+                                    {summaryData.key_topics?.map((topic) => (
                                         <span
                                             key={topic}
                                             className="rounded-full bg-purple-100 px-3 py-1 text-sm text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"

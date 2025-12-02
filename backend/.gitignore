@@ -36,6 +36,7 @@ wheels/
 # Data directories - Exclude all documents and database files
 data/documents/*
 data/chroma_db/*
+data/summary_cache.json
 !data/documents/.gitkeep
 !data/chroma_db/.gitkeep
 

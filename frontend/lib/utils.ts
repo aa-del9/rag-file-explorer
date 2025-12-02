@@ -1,13 +1,14 @@
-import { ReadonlyURLSearchParams } from 'next/navigation';
+import { ReadonlyURLSearchParams } from "next/navigation";
 
-export const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export const baseUrl =
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export const createUrl = (
   pathname: string,
   params: URLSearchParams | ReadonlyURLSearchParams
 ) => {
   const paramsString = params.toString();
-  const queryString = `${paramsString.length ? '?' : ''}${paramsString}`;
+  const queryString = `${paramsString.length ? "?" : ""}${paramsString}`;
 
   return `${pathname}${queryString}`;
 };
@@ -21,14 +22,14 @@ export const ensureStartsWith = (stringToCheck: string, startsWith: string) =>
  * Format a date string for display
  */
 export function formatDate(dateString: string): string {
-  if (!dateString) return 'Unknown';
-  
+  if (!dateString) return "Unknown";
+
   try {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   } catch {
     return dateString;
@@ -49,9 +50,9 @@ export function formatFileSize(sizeInMb: number): string {
  * Truncate text to a maximum length
  */
 export function truncateText(text: string | null, maxLength: number): string {
-  if (!text) return '';
+  if (!text) return "";
   if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength).trim() + '...';
+  return text.slice(0, maxLength).trim() + "...";
 }
 
 /**
@@ -62,10 +63,9 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout | null = null;
-  
+
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
 }
-};

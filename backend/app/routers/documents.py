@@ -289,6 +289,7 @@ async def list_documents(
         logger.error(f"List documents failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
 
+    
 
 # ============================================================
 # ADVANCED SEARCH ENDPOINTS
@@ -488,6 +489,37 @@ async def get_recommendations(
     except Exception as e:
         logger.error(f"Get recommendations failed: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get recommendations: {str(e)}")
+
+
+@router.get("/tags")
+async def list_tags():
+    """
+    Return a list of unique tags found across all documents.
+    """
+    components = get_components()
+    metadata_store = components['metadata_store']
+
+    try:
+        all_docs = metadata_store.list_all_documents(limit=10000)
+        tags_set = set()
+        for d in all_docs:
+            meta = d.get('metadata', {})
+            tags = meta.get('tags') or ''
+            if isinstance(tags, str):
+                parts = [t.strip() for t in tags.split(',') if t.strip()]
+            elif isinstance(tags, list):
+                parts = [t for t in tags if t]
+            else:
+                parts = []
+
+            for t in parts:
+                tags_set.add(t)
+
+        return {"success": True, "tags": sorted(list(tags_set))}
+
+    except Exception as e:
+        logger.error(f"List tags failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list tags: {str(e)}")
 
 
 @router.post("/recommend", response_model=RecommendationResponse)

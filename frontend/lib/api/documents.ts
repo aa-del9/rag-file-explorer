@@ -10,9 +10,9 @@ import type {
   DocumentsQueryParams,
   SearchQueryParams,
   RecommendationResponse,
-  SimilarDocumentsResponse
-} from '@/lib/types';
-import { API_URL } from '@/lib/constants';
+  SimilarDocumentsResponse,
+} from "@/lib/types";
+import { API_URL } from "@/lib/constants";
 
 /**
  * Generic fetch wrapper with error handling
@@ -22,10 +22,10 @@ async function apiFetch<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`;
-  
+
   const response = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     },
     ...options,
@@ -44,21 +44,21 @@ async function apiFetch<T>(
 /**
  * Build query string from params object
  */
-function buildQueryString(params: Record<string, unknown>): string {
+function buildQueryString<T extends object>(params: T): string {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== "") {
       if (Array.isArray(value)) {
-        searchParams.append(key, value.join(','));
+        searchParams.append(key, value.join(","));
       } else {
         searchParams.append(key, String(value));
       }
     }
   });
-  
+
   const queryString = searchParams.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryString ? `?${queryString}` : "";
 }
 
 // ============================================================
@@ -78,16 +78,20 @@ export async function getDocuments(
 /**
  * Fetch a single document by ID
  */
-export async function getDocument(documentId: string): Promise<DocumentMetadata> {
+export async function getDocument(
+  documentId: string
+): Promise<DocumentMetadata> {
   return apiFetch<DocumentMetadata>(`/documents/${documentId}`);
 }
 
 /**
  * Delete a document by ID
  */
-export async function deleteDocument(documentId: string): Promise<{ success: boolean }> {
+export async function deleteDocument(
+  documentId: string
+): Promise<{ success: boolean }> {
   return apiFetch<{ success: boolean }>(`/upload/document/${documentId}`, {
-    method: 'DELETE',
+    method: "DELETE",
   });
 }
 
@@ -103,6 +107,13 @@ export async function searchDocuments(
 ): Promise<DocumentSearchResponse> {
   const queryString = buildQueryString(params);
   return apiFetch<DocumentSearchResponse>(`/documents/search${queryString}`);
+}
+
+/**
+ * Fetch available tags from backend
+ */
+export async function getTags(): Promise<{ success: boolean; tags: string[] }> {
+  return apiFetch<{ success: boolean; tags: string[] }>(`/documents/tags`);
 }
 
 /**
@@ -132,7 +143,7 @@ export async function getDocumentSummary(
   documentId: string,
   forceRegenerate: boolean = false
 ): Promise<DocumentSummaryResponse> {
-  const queryString = forceRegenerate ? '?force_regenerate=true' : '';
+  const queryString = forceRegenerate ? "?force_regenerate=true" : "";
   return apiFetch<DocumentSummaryResponse>(
     `/documents/${documentId}/summary${queryString}`
   );
@@ -165,7 +176,7 @@ export async function getDocumentsOverview(): Promise<{
   document_types: Record<string, number>;
   total_size_mb: number;
 }> {
-  return apiFetch('/documents/stats/overview');
+  return apiFetch("/documents/stats/overview");
 }
 
 // ============================================================
@@ -183,16 +194,16 @@ export async function uploadDocument(file: File): Promise<{
   chunks_created: number;
 }> {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/upload/document`, {
-    method: 'POST',
+  const response = await fetch(`${API_URL}/upload/document`, {
+    method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || 'Upload failed');
+    throw new Error(errorData.detail || "Upload failed");
   }
 
   return response.json();
