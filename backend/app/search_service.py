@@ -616,12 +616,13 @@ class SearchService:
             include=["embeddings"]
         )
         
-        if not results['ids'] or not results.get('embeddings'):
+        embeddings = results.get('embeddings')
+        if not results['ids'] or embeddings is None or len(embeddings) == 0:
             # Fall back to generating embedding from summary
             summary = source_metadata.get('ai_summary', source_metadata.get('filename', ''))
             doc_embedding = self.embedding_model.embed_text(summary)
         else:
-            doc_embedding = results['embeddings'][0]
+            doc_embedding = embeddings[0]
         
         # Search for similar documents
         similar_docs = self.metadata_store.semantic_search(
