@@ -164,12 +164,12 @@ export function Navbar() {
                     {/* Right side actions */}
                     <div className="flex items-center gap-4">
                         {/* Settings Button */}
-                        <button
+                        {/* <button
                             className="hidden rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 md:block"
                             aria-label="Settings"
                         >
                             <Cog6ToothIcon className="h-5 w-5" />
-                        </button>
+                        </button> */}
 
                         {/* Mobile menu button */}
                         <button
