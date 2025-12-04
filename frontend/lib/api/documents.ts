@@ -1,5 +1,5 @@
 /**
- * API client for the RAG File Explorer backend
+ * API client for IntelliFile backend
  */
 
 import type {

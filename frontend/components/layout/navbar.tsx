@@ -70,7 +70,7 @@ export function Navbar() {
                                 <FolderOpenIcon className="h-5 w-5 text-white" />
                             </div>
                             <span className="hidden text-lg font-semibold text-neutral-900 dark:text-white sm:block">
-                                RAG Explorer
+                                IntelliFile
                             </span>
                         </Link>
                     </div>

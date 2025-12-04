@@ -1,4 +1,4 @@
-# Quick Start Guide - Metadata-Aware RAG File Explorer
+# Quick Start Guide - IntelliFile
 
 ## Getting Started in 5 Minutes
 
@@ -309,4 +309,4 @@ ollama pull llama3.1:latest
 - **Query with LLM**: 2-5 seconds (depends on Ollama speed)
 - **Hybrid query**: 2-5 seconds (LLM is the bottleneck)
 
-Enjoy your metadata-aware RAG file explorer! 🚀
+Enjoy your intelligent document explorer! 🚀

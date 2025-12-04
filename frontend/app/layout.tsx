@@ -6,7 +6,7 @@ import { Navbar } from '@/components/layout/navbar';
 // import { Footer } from '@/components/layout/footer-new';
 import { QueryProvider } from '@/lib/providers';
 
-const SITE_NAME = 'RAG File Explorer';
+const SITE_NAME = 'IntelliFile';
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),

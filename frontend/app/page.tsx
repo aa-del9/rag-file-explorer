@@ -46,7 +46,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl md:text-6xl dark:text-white">
-          <span className="block">RAG File Explorer</span>
+          <span className="block">IntelliFile</span>
           <span className="block text-blue-600 dark:text-blue-400">
             AI-Powered Document Search
           </span>

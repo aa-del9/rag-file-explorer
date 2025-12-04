@@ -2,7 +2,7 @@
 
 ## Overview
 
-The RAG File Explorer has been extended with a comprehensive metadata layer that enables intelligent document discovery and hybrid search capabilities. The system now supports:
+IntelliFile has been built with a comprehensive metadata layer that enables intelligent document discovery and hybrid search capabilities. The system supports:
 
 1. **Document-level metadata extraction** - File properties, PDF/DOCX metadata
 2. **AI-generated metadata** - Summaries, keywords, document classification

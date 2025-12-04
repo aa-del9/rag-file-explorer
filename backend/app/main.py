@@ -1,6 +1,6 @@
 """
 Main FastAPI application entry point.
-Initializes the RAG File Explorer backend server.
+Initializes the IntelliFile backend server.
 """
 
 import logging

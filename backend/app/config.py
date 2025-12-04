@@ -1,5 +1,5 @@
 """
-Configuration module for the RAG File Explorer backend.
+Configuration module for the IntelliFile backend.
 Manages environment variables and application settings.
 """
 
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     """
     
     # Application Settings
-    APP_NAME: str = "RAG File Explorer"
+    APP_NAME: str = "IntelliFile"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     

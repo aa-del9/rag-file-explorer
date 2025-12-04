@@ -1,10 +1,10 @@
-# RAG File Explorer - Frontend
+# IntelliFile - Frontend
 
-A modern, intelligent document explorer built with Next.js 15, React 19, and TanStack Query. This frontend connects to the RAG File Explorer backend to provide semantic search, document browsing, and AI-powered document insights.
+A modern, intelligent document explorer built with Next.js 15, React 19, and TanStack Query. This frontend connects to the IntelliFile backend to provide semantic search, document browsing, and AI-powered document insights.
 
 ## Features
 
-- **📂 Document Explorer** - Browse and manage your documents with grid/list views
+- **📂 IntelliFile Explorer** - Browse and manage your documents with grid/list views
 - **🔍 Global Search** - Semantic search powered by AI embeddings
 - **🎛️ Advanced Filters** - Filter by file type, date range, page count, file size, and tags
 - **📊 Sorting Controls** - Sort by name, date, size, page count, or relevance
@@ -106,7 +106,7 @@ pnpm start
 
 ## API Integration
 
-The frontend connects to the RAG File Explorer backend API. Key endpoints used:
+The frontend connects to the IntelliFile backend API. Key endpoints used:
 
 | Endpoint                      | Description                     |
 | ----------------------------- | ------------------------------- |

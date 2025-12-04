@@ -1,6 +1,6 @@
-# RAG File Explorer Backend
+# IntelliFile Backend
 
-A fully local RAG (Retrieval-Augmented Generation) system for querying documents using Llama 3.1 via Ollama.
+A fully local RAG (Retrieval-Augmented Generation) system for intelligent document exploration using Llama 3.1 via Ollama.
 
 ## 🚀 Features
 

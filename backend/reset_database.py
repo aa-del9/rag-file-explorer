@@ -19,7 +19,7 @@ def reset_database():
     log_file = backend_dir / "rag_backend.log"
     
     print("=" * 60)
-    print("RAG File Explorer - Database Reset")
+    print("IntelliFile - Database Reset")
     print("=" * 60)
     print()
     print("This will delete:")

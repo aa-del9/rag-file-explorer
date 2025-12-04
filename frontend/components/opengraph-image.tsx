@@ -12,7 +12,7 @@ export default async function OpengraphImage(
 ): Promise<ImageResponse> {
   const { title } = {
     ...{
-      title: 'DocuSearch - Intelligent Document Explorer'
+      title: 'IntelliFile - Intelligent Document Explorer'
     },
     ...props
   };

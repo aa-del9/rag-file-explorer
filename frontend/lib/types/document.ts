@@ -1,5 +1,5 @@
 /**
- * Document types for the RAG File Explorer
+ * Document types for IntelliFile
  */
 
 export interface DocumentMetadata {

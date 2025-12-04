@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-    title: 'Document Explorer',
+    title: 'Explorer | IntelliFile',
     description: 'Browse and search your documents with AI-powered insights',
 };
 

@@ -1,5 +1,5 @@
 """
-Query Classifier for RAG File Explorer.
+Query Classifier for IntelliFile.
 Classifies user queries as metadata-oriented, content-oriented, or hybrid.
 """
 
