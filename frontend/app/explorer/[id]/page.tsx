@@ -25,6 +25,7 @@ import {
     ClipboardDocumentIcon,
     CheckIcon,
 } from '@heroicons/react/24/outline';
+import { AISummaryText } from '@/components/formatted-text';
 
 function formatDate(dateString: string): string {
     if (!dateString) return 'Unknown';
@@ -279,9 +280,7 @@ export default function DocumentDetailPage() {
                     </div>
                 ) : summaryData ? (
                     <div className="space-y-4">
-                        <p className="text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                            {summaryData.summary}
-                        </p>
+                        <AISummaryText text={summaryData.summary} />
 
                         {(summaryData.key_topics?.length ?? 0) > 0 && (
                             <div>
@@ -301,9 +300,11 @@ export default function DocumentDetailPage() {
                             </div>
                         )}
                     </div>
+                ) : document.ai_summary ? (
+                    <AISummaryText text={document.ai_summary} />
                 ) : (
                     <p className="text-neutral-500 dark:text-neutral-400">
-                        {document.ai_summary || 'No summary available for this document.'}
+                        No summary available for this document.
                     </p>
                 )}
             </div>

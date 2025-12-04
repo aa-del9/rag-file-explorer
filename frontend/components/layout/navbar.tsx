@@ -10,6 +10,7 @@ import clsx from 'clsx';
 import {
     FolderOpenIcon,
     MagnifyingGlassIcon,
+    ArrowUpTrayIcon,
     Cog6ToothIcon,
     Bars3Icon,
     XMarkIcon,
@@ -22,6 +23,7 @@ import { DocumentCard } from '@/components/documents';
 
 const navigation = [
     { name: 'Explorer', href: '/explorer', icon: FolderOpenIcon },
+    { name: 'Upload', href: '/upload', icon: ArrowUpTrayIcon },
     { name: 'Search', href: '/search', icon: MagnifyingGlassIcon },
 ];
 
