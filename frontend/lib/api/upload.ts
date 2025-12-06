@@ -38,7 +38,7 @@ export interface UploadError {
  * @param file - The file to upload
  * @returns Promise with upload response
  */
-export async function uploadDocument(file: File): Promise<UploadResponse> {
+export async function uploadDocument2(file: File): Promise<UploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
 

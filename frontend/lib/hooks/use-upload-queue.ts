@@ -6,7 +6,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
-  uploadDocument,
+  uploadDocument2,
   validateFile,
   type UploadResponse,
 } from "@/lib/api/upload";
@@ -80,7 +80,7 @@ export function useUploadQueue(): UseUploadQueueReturn {
 
   // TanStack Query mutation for single file upload
   const uploadMutation = useMutation({
-    mutationFn: uploadDocument,
+    mutationFn: uploadDocument2,
   });
 
   /**
