@@ -4,6 +4,7 @@ Initializes the IntelliFile backend server.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,13 +20,21 @@ from app.vector_store import VectorStore
 from app.llm_client import LLMClient
 
 # Configure logging
+# Use data directory for log file to ensure writability in Docker
+log_file_path = settings.DATA_DIR / 'rag_backend.log'
+log_handlers = [logging.StreamHandler(sys.stdout)]
+
+# Only add file handler if we can write to the path
+try:
+    log_handlers.append(logging.FileHandler(log_file_path))
+except (PermissionError, OSError):
+    # In Docker or restricted environments, skip file logging
+    pass
+
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('rag_backend.log')
-    ]
+    handlers=log_handlers
 )
 
 logger = logging.getLogger(__name__)
