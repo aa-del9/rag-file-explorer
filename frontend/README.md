@@ -4,7 +4,8 @@ A modern, intelligent document explorer built with Next.js 15, React 19, and Tan
 
 ## Features
 
-- **📂 IntelliFile Explorer** - Browse and manage your documents with grid/list views
+- **📂 Document Explorer** - Browse and manage your documents with grid/list views
+- **📤 Multi-File Upload** - Drag-and-drop upload with queue management
 - **🔍 Global Search** - Semantic search powered by AI embeddings
 - **🎛️ Advanced Filters** - Filter by file type, date range, page count, file size, and tags
 - **📊 Sorting Controls** - Sort by name, date, size, page count, or relevance
@@ -12,6 +13,7 @@ A modern, intelligent document explorer built with Next.js 15, React 19, and Tan
 - **🚀 Open with System App** - Open documents directly in their default application (PDF Reader, Word, etc.)
 - **📋 Copy File Path** - Quick copy file paths to clipboard
 - **🌙 Dark Mode** - Full dark mode support
+- **🔔 Server Status** - Real-time backend connectivity indicator
 
 ## Tech Stack
 
@@ -32,7 +34,8 @@ frontend/
 │   ├── explorer/          # Document explorer
 │   │   ├── page.tsx       # Main explorer view with filters
 │   │   └── [id]/          # Document detail page
-│   └── search/            # Search results page
+│   ├── search/            # Search results page
+│   └── upload/            # Multi-file upload page
 ├── components/
 │   ├── documents/         # Document-related components
 │   │   ├── document-card.tsx
@@ -40,15 +43,21 @@ frontend/
 │   │   ├── filters-panel.tsx
 │   │   ├── sorting-controls.tsx
 │   │   └── file-type-icon.tsx
+│   ├── upload/            # Upload components
+│   │   ├── dropzone.tsx
+│   │   └── file-item.tsx
 │   └── layout/            # Layout components
 │       ├── navbar.tsx
-│       └── footer.tsx
+│       ├── footer.tsx
+│       └── server-status-banner.tsx
 ├── lib/
 │   ├── api/               # API client functions
-│   │   └── documents.ts   # Document API calls
+│   │   ├── documents.ts   # Document API calls
+│   │   └── upload.ts      # Upload API calls
 │   ├── hooks/             # Custom React hooks
 │   │   ├── use-documents.ts
 │   │   ├── use-search.ts
+│   │   ├── use-upload-queue.ts
 │   │   └── use-debounce.ts
 │   ├── providers/         # React context providers
 │   │   └── query-provider.tsx
@@ -65,7 +74,29 @@ frontend/
 
 - Node.js 18.17 or later
 - pnpm (recommended) or npm
-- Backend server running (see backend README)
+- Backend server running (see below)
+
+### Backend Setup
+
+The frontend requires the IntelliFile backend. You can run it via:
+
+**Option 1: Docker (Recommended)**
+```bash
+# From the project root
+docker compose up -d
+
+# Backend will be at http://localhost:8000
+```
+
+**Option 2: Local Development**
+```bash
+# See backend/README.md for full instructions
+cd backend
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python -m app.main
+```
 
 ### Environment Setup
 

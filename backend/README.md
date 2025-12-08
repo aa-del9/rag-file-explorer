@@ -35,7 +35,25 @@ A fully local RAG (Retrieval-Augmented Generation) system for intelligent docume
 2. **Ollama** installed and running
 3. **Llama 3.1 model** pulled in Ollama
 
-## 🛠️ Installation
+## 🐳 Docker (Recommended)
+
+The easiest way to run the backend is using Docker Compose from the root directory:
+
+```bash
+# From the project root directory
+docker compose up -d
+
+# Check backend logs
+docker logs -f intellifile-backend
+
+# Backend will be available at http://localhost:8000
+```
+
+See the [main README](../README.md) for complete Docker instructions.
+
+## 🛠️ Development Installation
+
+For local development with hot-reloading:
 
 ### Step 1: Install Ollama
 
@@ -43,27 +61,32 @@ Download and install Ollama from: https://ollama.ai
 
 ### Step 2: Pull Llama 3.1 Model
 
-```cmd
+```bash
 ollama pull llama3.1:latest
 ```
 
 Verify it's running:
 
-```cmd
+```bash
 ollama list
 ```
 
 ### Step 3: Set Up Python Environment
 
-```cmd
+```bash
 cd backend
 python -m venv venv
+
+# Windows:
 venv\Scripts\activate
+
+# macOS/Linux:
+source venv/bin/activate
 ```
 
 ### Step 4: Install Dependencies
 
-```cmd
+```bash
 pip install -r requirements.txt
 ```
 
@@ -80,17 +103,17 @@ This will install:
 
 ### Option 1: Direct Python
 
-```cmd
+```bash
 cd backend
-venv\Scripts\activate
+# Activate virtual environment first
 python -m app.main
 ```
 
-### Option 2: Using Uvicorn
+### Option 2: Using Uvicorn (with hot-reload)
 
-```cmd
+```bash
 cd backend
-venv\Scripts\activate
+# Activate virtual environment first
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
