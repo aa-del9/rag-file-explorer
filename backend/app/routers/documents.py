@@ -867,6 +867,9 @@ async def open_document_in_system(
     This endpoint triggers the OS to open the file (e.g., PDF opens in Adobe Reader,
     DOCX opens in Word, etc.).
     
+    **Note:** This feature only works when running the backend locally on your machine,
+    not in Docker or other containerized environments.
+    
     **Example:**
     ```
     POST /documents/abc-123/open
@@ -883,7 +886,21 @@ async def open_document_in_system(
     """
     import subprocess
     import platform
+    import os
     from pathlib import Path as PathLib
+    
+    # Check if running in Docker/container (no display available)
+    is_docker = (
+        os.path.exists('/.dockerenv') or 
+        os.environ.get('DOCKER_CONTAINER', False) or
+        os.environ.get('container', '') == 'docker'
+    )
+    
+    if is_docker:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot open files in system application when running in Docker. This feature is only available when running the backend locally."
+        )
     
     components = get_components()
     metadata_store = components['metadata_store']
@@ -908,16 +925,22 @@ async def open_document_in_system(
         # Open file with system default application
         system = platform.system()
         
-        if system == 'Windows':
-            # Windows: use os.startfile or subprocess with 'start'
-            import os
-            os.startfile(str(path))
-        elif system == 'Darwin':
-            # macOS: use 'open' command
-            subprocess.Popen(['open', str(path)])
-        else:
-            # Linux: use 'xdg-open'
-            subprocess.Popen(['xdg-open', str(path)])
+        try:
+            if system == 'Windows':
+                # Windows: use os.startfile
+                os.startfile(str(path))
+            elif system == 'Darwin':
+                # macOS: use 'open' command
+                subprocess.Popen(['open', str(path)])
+            else:
+                # Linux: use 'xdg-open'
+                subprocess.Popen(['xdg-open', str(path)])
+        except FileNotFoundError as e:
+            # Handle case where xdg-open or open command is not available
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot open files: No display available or required command not found. This feature requires a desktop environment."
+            )
         
         logger.info(f"Opened file in system application: {file_path}")
         

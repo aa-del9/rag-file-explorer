@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useDocument, useDocumentSummary, useSimilarDocuments } from '@/lib/hooks';
 import { FileTypeIcon, FileTypeBadge, DocumentCard } from '@/components/documents';
 import { openDocumentFile, viewDocumentInBrowser, copyToClipboard } from '@/lib/api';
@@ -84,8 +85,20 @@ export default function DocumentDetailPage() {
         setIsOpening(true);
         try {
             await openDocumentFile(documentId);
+            toast.success('File opened successfully');
         } catch (error) {
             console.error('Failed to open file:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to open file';
+            if (errorMessage.includes('Docker') || errorMessage.includes('locally')) {
+                toast.error('Cannot open files when backend is running in Docker', {
+                    description: 'Use "Download" instead, or run the backend locally.',
+                    duration: 5000,
+                });
+            } else {
+                toast.error('Failed to open file', {
+                    description: errorMessage,
+                });
+            }
         } finally {
             setIsOpening(false);
         }

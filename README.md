@@ -32,6 +32,7 @@ A fully local RAG (Retrieval-Augmented Generation) system for intelligent docume
 The fastest way to get IntelliFile running with all dependencies.
 
 **Prerequisites:**
+
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 
 **Steps:**
@@ -52,18 +53,21 @@ docker logs -f intellifile-ollama-pull
 ```
 
 **Services will be available at:**
+
 - **Backend API**: http://localhost:8000
 - **API Docs**: http://localhost:8000/docs
 - **ChromaDB**: http://localhost:8100
 - **Ollama**: http://localhost:11434
 
 **Check service health:**
+
 ```bash
 docker ps
 docker logs intellifile-backend
 ```
 
 **Stop services:**
+
 ```bash
 docker compose down
 
@@ -78,6 +82,7 @@ docker compose down -v
 For local development with hot-reloading.
 
 **Prerequisites:**
+
 - [Python 3.9+](https://www.python.org/downloads/)
 - [Node.js 18.17+](https://nodejs.org/)
 - [pnpm](https://pnpm.io/) (recommended) or npm
@@ -211,16 +216,16 @@ curl -X POST "http://localhost:8000/chat/query" \
 
 Copy `.env.example` to `.env` and customize:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OLLAMA_MODEL` | `llama3.1:latest` | LLM model to use |
-| `OLLAMA_TIMEOUT` | `120` | Request timeout in seconds |
-| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence transformer model |
-| `EMBEDDING_DEVICE` | `cpu` | `cpu` or `cuda` for GPU |
-| `CHUNK_SIZE` | `400` | Text chunk size in characters |
-| `CHUNK_OVERLAP` | `50` | Overlap between chunks |
-| `TOP_K_RESULTS` | `5` | Number of results to retrieve |
-| `MAX_FILE_SIZE` | `52428800` | Max upload size (50MB) |
+| Variable           | Default            | Description                   |
+| ------------------ | ------------------ | ----------------------------- |
+| `OLLAMA_MODEL`     | `llama3.1:latest`  | LLM model to use              |
+| `OLLAMA_TIMEOUT`   | `120`              | Request timeout in seconds    |
+| `EMBEDDING_MODEL`  | `all-MiniLM-L6-v2` | Sentence transformer model    |
+| `EMBEDDING_DEVICE` | `cpu`              | `cpu` or `cuda` for GPU       |
+| `CHUNK_SIZE`       | `400`              | Text chunk size in characters |
+| `CHUNK_OVERLAP`    | `50`               | Overlap between chunks        |
+| `TOP_K_RESULTS`    | `5`                | Number of results to retrieve |
+| `MAX_FILE_SIZE`    | `52428800`         | Max upload size (50MB)        |
 
 ### GPU Support (NVIDIA)
 
@@ -269,6 +274,7 @@ rag-file-explorer/
 ### Docker Issues
 
 **Services not starting:**
+
 ```bash
 # Check logs
 docker compose logs
@@ -279,6 +285,7 @@ docker compose up -d
 ```
 
 **Model not downloading:**
+
 ```bash
 # Check ollama-pull logs
 docker logs intellifile-ollama-pull
@@ -290,11 +297,13 @@ docker exec -it intellifile-ollama ollama pull llama3.1:latest
 ### Development Issues
 
 **Backend won't start:**
+
 - Ensure Ollama is running: `ollama list`
 - Check Python version: `python --version` (3.9+ required)
 - Verify virtual environment is activated
 
 **Frontend can't connect to backend:**
+
 - Ensure backend is running on port 8000
 - Check `NEXT_PUBLIC_API_URL` in `.env.local`
 

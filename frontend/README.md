@@ -81,6 +81,7 @@ frontend/
 The frontend requires the IntelliFile backend. You can run it via:
 
 **Option 1: Docker (Recommended)**
+
 ```bash
 # From the project root
 docker compose up -d
@@ -89,6 +90,7 @@ docker compose up -d
 ```
 
 **Option 2: Local Development**
+
 ```bash
 # See backend/README.md for full instructions
 cd backend

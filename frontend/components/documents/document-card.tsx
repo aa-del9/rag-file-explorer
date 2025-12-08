@@ -8,6 +8,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import clsx from 'clsx';
+import { toast } from 'sonner';
 import { DocumentMetadata } from '@/lib/types';
 import { FileTypeIcon, FileTypeBadge } from './file-type-icon';
 import { openDocumentFile } from '@/lib/api';
@@ -91,8 +92,20 @@ export function DocumentCard({
         setIsOpening(true);
         try {
             await openDocumentFile(document_id);
+            toast.success('File opened successfully');
         } catch (error) {
             console.error('Failed to open file:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to open file';
+            if (errorMessage.includes('Docker') || errorMessage.includes('locally')) {
+                toast.error('Cannot open files when backend is running in Docker', {
+                    description: 'Use "View in Browser" instead, or run the backend locally.',
+                    duration: 5000,
+                });
+            } else {
+                toast.error('Failed to open file', {
+                    description: errorMessage,
+                });
+            }
         } finally {
             setIsOpening(false);
         }
