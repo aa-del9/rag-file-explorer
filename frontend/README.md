@@ -2,6 +2,12 @@
 
 A modern, intelligent document explorer built with Next.js 15, React 19, and TanStack Query. This frontend connects to the IntelliFile backend to provide semantic search, document browsing, and AI-powered document insights.
 
+## Deployment
+
+This frontend is deployed on **Cloudflare Workers** using [OpenNext](https://opennext.js.org/cloudflare).
+
+**Live Demo**: [intellifile.aadel.dev](https://intellifile.aadel.dev)
+
 ## Features
 
 - **📂 Document Explorer** - Browse and manage your documents with grid/list views
@@ -22,6 +28,7 @@ A modern, intelligent document explorer built with Next.js 15, React 19, and Tan
 - **State Management**: [TanStack Query](https://tanstack.com/query) for server state
 - **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
 - **UI Components**: [Headless UI](https://headlessui.com/), [Heroicons](https://heroicons.com/)
+- **Deployment**: [Cloudflare Workers](https://workers.cloudflare.com/) via [OpenNext](https://opennext.js.org/cloudflare)
 - **Font**: [Geist](https://vercel.com/font)
 - **Package Manager**: pnpm
 
